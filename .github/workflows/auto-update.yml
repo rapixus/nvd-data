@@ -1,0 +1,52 @@
+name: Auto-Update NVD Data
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+jobs:
+  run-nvd-dl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Make binary executable
+      run: chmod +x ./bin/nvd-dl-linux-amd64
+
+    - name: Run nvd-dl
+      run: ./bin/nvd-dl-linux-amd64 --workdir nvd --output out
+
+    - name: Install GitHub CLI
+      uses: cli/gh-install@v2
+
+    - name: Delete existing 'latest' release and tag (if any)
+      continue-on-error: true
+      run: |
+        gh auth setup-git
+        gh release delete latest -y
+        git push origin :refs/tags/latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Find out all *.zip files
+      id: find_zip
+      run: |
+        ZIP_FILES=$(find out -type f -name "*.zip" -print | paste -sd' ' -)
+        if [ -z "$ZIP_FILES" ]; then
+          echo "❌ No ZIP files found."
+          exit 1
+        fi
+        echo "ZIP_FILES=$ZIP_FILES" >> $GITHUB_ENV
+
+    - name: Create new 'latest' release and upload .zip files
+      run: |
+        echo "Uploading zip files: $ZIP_FILES"
+        DATE_UTC=$(date -u +%Y-%m-%dT%H:%MZ)
+        gh release create latest $ZIP_FILES \
+          --title "Latest Release ($DATE_UTC)" \
+          --notes "Auto release from commit ${{ github.sha }} at $DATE_UTC"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ZIP_FILES: ${{ env.ZIP_FILES }}
