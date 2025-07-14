@@ -19,7 +19,9 @@ jobs:
       run: ./bin/nvd-dl-linux-amd64 --workdir nvd --output out
 
     - name: Install GitHub CLI
-      uses: cli/gh-install@v2
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gh
 
     - name: Delete existing 'latest' release and tag (if any)
       continue-on-error: true
