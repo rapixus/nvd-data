@@ -16,7 +16,7 @@ jobs:
       run: chmod +x ./bin/nvd-dl-linux-amd64
 
     - name: Run nvd-dl
-      run: ./bin/nvd-dl-linux-amd64 --workdir nvd --output out
+      run: ./bin/nvd-dl-linux-amd64 --workdir nvd --output out --cve-pack-mode 2
 
     - name: Install GitHub CLI
       run: |
